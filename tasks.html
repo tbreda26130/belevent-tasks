@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Belevent Tasks</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body {
+      font-family: Arial;
+      background:#f5f7ff;
+      padding:40px;
+      text-align:center;
+    }
+    input, select {
+      padding:10px;
+      margin:5px;
+      border-radius:8px;
+      border:1px solid #ccc;
+    }
+    button {
+      padding:10px 15px;
+      margin:5px;
+      background:#1F4FFF;
+      color:white;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+    }
+    table {
+      margin:auto;
+      margin-top:20px;
+      border-collapse: collapse;
+    }
+    td, th {
+      padding:10px 20px;
+      border:1px solid #ddd;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>Belevent - Création Fiches</h2>
+
+<input id="name" placeholder="Nom du lieu ou prestataire">
+<input id="zone" placeholder="Zone (ex: PACA)">
+<button onclick="addTask()">➕ Ajouter</button>
+
+<table id="table">
+<tr>
+<th>Nom</th>
+<th>Zone</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</table>
+
+<script>
+
+const supabase = window.supabase.createClient(
+"https://hvzriexalxeyuujgzvhk.supabase.co",
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2enJpZXhhbHhleXV1amd6dmhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyOTUwNzUsImV4cCI6MjA4Nzg3MTA3NX0.SbjjcFg6L7owDzV48I2l6HgvTERttyqceYlH_go2fjw"
+)
+
+async function loadTasks() {
+let { data } = await supabase.from('tasks').select('*')
+const table = document.getElementById("table")
+
+data.forEach(task => {
+let row = table.insertRow()
+row.insertCell(0).innerText = task.name
+row.insertCell(1).innerText = task.zone
+row.insertCell(2).innerText = task.status
+
+let btn = document.createElement("button")
+btn.innerText = "✔ Fait"
+btn.onclick = () => markDone(task.id)
+row.insertCell(3).appendChild(btn)
+})
+}
+
+async function addTask() {
+let name = document.getElementById("name").value
+let zone = document.getElementById("zone").value
+
+await supabase.from('tasks').insert([
+{ name: name, zone: zone, status: "en attente" }
+])
+
+location.reload()
+}
+
+async function markDone(id) {
+await supabase.from('tasks')
+.update({ status: "fait" })
+.eq('id', id)
+
+location.reload()
+}
+
+loadTasks()
+
+</script>
+
+</body>
+</html>
