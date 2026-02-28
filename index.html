@@ -24,6 +24,7 @@
   <div class="wrap">
     <div class="card">
       <h1>Queue</h1>
+      <div style="opacity:.6;font-size:12px;margin-bottom:10px">VERSION FR-003</div>
 
       <div class="row" style="margin-bottom:12px">
         <input id="nom" placeholder="Nom (prestataire/lieu)" />
@@ -99,11 +100,7 @@
           const id  = e.target.getAttribute("data-id");
           const val = e.target.value;
 
-          const { error } = await sb
-            .from("tasks")
-            .update({ statut: val })
-            .eq("id", id);
-
+          const { error } = await sb.from("tasks").update({ statut: val }).eq("id", id);
           if (error) msgEl.textContent = "Erreur update: " + error.message;
           else refresh();
         });
@@ -119,13 +116,9 @@
 
       if (!nom) { alert("Nom obligatoire"); return; }
 
-      const { error } = await sb
-        .from("tasks")
-        .insert([{ nom, zone, statut }]);
-
-      if (error) {
-        msgEl.textContent = "Erreur insert: " + error.message;
-      } else {
+      const { error } = await sb.from("tasks").insert([{ nom, zone, statut }]);
+      if (error) msgEl.textContent = "Erreur insert: " + error.message;
+      else {
         document.getElementById("nom").value = "";
         document.getElementById("zone").value = "";
         refresh();
