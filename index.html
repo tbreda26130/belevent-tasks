@@ -76,13 +76,13 @@
         const row = document.createElement("div");
         row.className = "row line";
         row.innerHTML = `
-          <div>${esc(t.name)}</div>
+          <div>${esc(t.nom)}</div>
           <div>${esc(t.zone)}</div>
           <div class="status">${esc(t.status)}</div>
           <div>
             <select data-id="${t.id}">
               ${["EN_ATTENTE","EN_COURS","TERMINE","BLOQUE"].map(s =>
-                `<option value="${s}" ${t.status===s?"selected":""}>${s}</option>`
+                `<option value="${s}" ${t.statut===s?"selected":""}>${s}</option>`
               ).join("")}
             </select>
           </div>
@@ -92,7 +92,7 @@
           const id = e.target.getAttribute("data-id");
           const val = e.target.value;
 
-          const { error } = await sb.from("tasks").update({ status: val }).eq("id", id);
+          const { error } = await sb.from("tasks").update({ statut: val }).eq("id", id);
           if (error) msgEl.textContent = "Erreur update: " + error.message;
           else refresh();
         });
@@ -102,13 +102,13 @@
     }
 
     document.getElementById("add").addEventListener("click", async () => {
-      const name = document.getElementById("name").value.trim();
+      const nom = document.getElementById("name").value.trim();
       const zone = document.getElementById("zone").value.trim();
       const status = document.getElementById("status").value;
 
-      if (!name) { alert("Nom obligatoire"); return; }
+      if (!nom) { alert("Nom obligatoire"); return; }
 
-      const { error } = await sb.from("tasks").insert([{ name, zone, status }]);
+      const { error } = await sb.from("tasks").insert([{ name, zone, statut: status }]);
       if (error) msgEl.textContent = "Erreur insert: " + error.message;
       else {
         document.getElementById("name").value = "";
