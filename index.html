@@ -63,6 +63,7 @@
           <option value="EN_COURS">En cours</option>
           <option value="TERMINE">Terminé</option>
           <option value="BLOQUE">Bloqué</option>
+          <option value="DOUBLON">Doublon</option>
         </select>
         <button id="add" type="button">Nouvelle ligne</button>
       </div>
@@ -118,7 +119,8 @@
       EN_ATTENTE:"En attente",
       EN_COURS:"En cours",
       TERMINE:"Terminé",
-      BLOQUE:"Bloqué"
+      BLOQUE:"Bloqué",
+      DOUBLON:"Doublon"
     };
 
     async function refresh(){
@@ -151,7 +153,7 @@
           <div class="status">${esc(statutLabel)}</div>
           <div>
             <select data-id="${t.id}">
-              ${["EN_ATTENTE","EN_COURS","TERMINE","BLOQUE"].map(s =>
+              ${["EN_ATTENTE","EN_COURS","TERMINE","BLOQUE","DOUBLON"].map(s =>
                 `<option value="${s}" ${t.statut === s ? "selected" : ""}>${STAT[s]}</option>`
               ).join("")}
             </select>
