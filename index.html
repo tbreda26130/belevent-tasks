@@ -6,42 +6,73 @@
   <title>Belevent Queue</title>
   <style>
     body{font-family:system-ui;margin:0;background:#f6f7fb}
-    .wrap{max-width:920px;margin:40px auto;padding:0 16px}
+    .wrap{max-width:980px;margin:40px auto;padding:0 16px}
     .card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 24px rgba(0,0,0,.06)}
     h1{margin:0 0 12px}
-    .row{display:grid;grid-template-columns:2fr 1fr 1fr 160px;gap:10px;align-items:center}
-    .row.head{font-weight:700;opacity:.7;margin-bottom:10px}
+    .row{display:grid;grid-template-columns:2.2fr 1fr 1.2fr 1fr 170px;gap:10px;align-items:center}
+    .row.head{font-weight:700;opacity:.7;margin:12px 0 10px}
     input,select,button{padding:10px;border-radius:10px;border:1px solid #ddd}
     button{cursor:pointer;border:none;background:#1f4fff;color:#fff;font-weight:700}
     button:hover{background:#173cc0}
     .line{padding:10px 0;border-top:1px solid #eee}
-    .status{font-weight:700}
+    .status{font-weight:800}
     .muted{opacity:.65;font-size:14px;margin-top:10px}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid #e6e6e6;font-size:12px;opacity:.9}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+    .right{display:flex;gap:8px;align-items:center}
+    .btn-lite{background:#eef2ff;color:#1f4fff;border:1px solid #d6e0ff}
+    .btn-lite:hover{background:#e3e9ff}
   </style>
 </head>
-
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>Queue</h1>
-      <div style="opacity:.6;font-size:12px;margin-bottom:10px">VERSION FR-003</div>
+      <div class="top">
+        <div>
+          <h1>Queue</h1>
+          <div class="muted">Colonnes : nom / categorie / zone / statut</div>
+        </div>
+        <div class="right">
+          <span class="pill" id="count">0</span>
+          <button class="btn-lite" id="refreshBtn" type="button">Rafraîchir</button>
+        </div>
+      </div>
 
-      <div class="row" style="margin-bottom:12px">
+      <!-- Formulaire ajout -->
+      <div class="row" style="margin:14px 0 12px">
         <input id="nom" placeholder="Nom (prestataire/lieu)" />
-        <input id="zone" placeholder="Zone (département/région)" />
+        <select id="categorie">
+          <option value="LIEU">Lieu</option>
+          <option value="TRAITEUR">Traiteur</option>
+          <option value="PHOTOGRAPHE">Photographe</option>
+          <option value="VIDEASTE">Vidéaste</option>
+          <option value="DJ">DJ</option>
+          <option value="DECORATION">Décoration</option>
+          <option value="FLEURISTE">Fleuriste</option>
+          <option value="VIN_BOISSON">Vin & Boisson</option>
+          <option value="ORGANISATION">Organisation d’événement</option>
+          <option value="TRANSPORT">Transport & véhicule</option>
+          <option value="SECURITE">Sécurité</option>
+          <option value="LOGISTIQUE">Logistique</option>
+          <option value="OFFICIANT">Officiant</option>
+          <option value="BEAUTE">Beauté & soin</option>
+        </select>
+        <input id="zone" placeholder="Zone (ex: 26 - Drôme)" />
         <select id="statut">
           <option value="EN_ATTENTE">En attente</option>
           <option value="EN_COURS">En cours</option>
           <option value="TERMINE">Terminé</option>
           <option value="BLOQUE">Bloqué</option>
         </select>
-        <button id="add">Nouvelle ligne</button>
+        <button id="add" type="button">Nouvelle ligne</button>
       </div>
 
+      <!-- Header -->
       <div class="row head">
-        <div>Nom</div><div>Zone</div><div>Statut</div><div>Modifier</div>
+        <div>Nom</div><div>Catégorie</div><div>Zone</div><div>Statut</div><div>Modifier</div>
       </div>
 
+      <!-- Liste -->
       <div id="list"></div>
       <div class="muted" id="msg"></div>
     </div>
@@ -50,6 +81,7 @@
   <script type="module">
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
+    // === CONFIG SUPABASE ===
     const SUPABASE_URL = "https://hvzriexalxeyuujgzvhk.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2enJpZXhhbHhleXV1amd6dmhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyOTUwNzUsImV4cCI6MjA4Nzg3MTA3NX0.SbjjcFg6L7owDzV48I2l6HgvTERttyqceYlH_go2fjw";
 
@@ -57,6 +89,7 @@
 
     const listEl = document.getElementById("list");
     const msgEl  = document.getElementById("msg");
+    const countEl = document.getElementById("count");
 
     function esc(s){
       return String(s ?? "").replace(/[&<>"']/g, m => ({
@@ -64,13 +97,37 @@
       }[m]));
     }
 
+    const CATS = {
+      LIEU:"Lieu",
+      TRAITEUR:"Traiteur",
+      PHOTOGRAPHE:"Photographe",
+      VIDEASTE:"Vidéaste",
+      DJ:"DJ",
+      DECORATION:"Décoration",
+      FLEURISTE:"Fleuriste",
+      VIN_BOISSON:"Vin & Boisson",
+      ORGANISATION:"Organisation d’événement",
+      TRANSPORT:"Transport & véhicule",
+      SECURITE:"Sécurité",
+      LOGISTIQUE:"Logistique",
+      OFFICIANT:"Officiant",
+      BEAUTE:"Beauté & soin"
+    };
+
+    const STAT = {
+      EN_ATTENTE:"En attente",
+      EN_COURS:"En cours",
+      TERMINE:"Terminé",
+      BLOQUE:"Bloqué"
+    };
+
     async function refresh(){
       msgEl.textContent = "";
       listEl.innerHTML = "";
 
       const { data, error } = await sb
         .from("tasks")
-        .select("id, nom, zone, statut")
+        .select("id, nom, categorie, zone, statut")
         .order("id", { ascending: false });
 
       if (error) {
@@ -78,18 +135,24 @@
         return;
       }
 
+      countEl.textContent = String((data || []).length);
+
       (data || []).forEach(t => {
         const row = document.createElement("div");
         row.className = "row line";
 
+        const catLabel = CATS[t.categorie] || t.categorie || "";
+        const statutLabel = STAT[t.statut] || t.statut || "";
+
         row.innerHTML = `
           <div>${esc(t.nom)}</div>
+          <div>${esc(catLabel)}</div>
           <div>${esc(t.zone)}</div>
-          <div class="status">${esc(t.statut)}</div>
+          <div class="status">${esc(statutLabel)}</div>
           <div>
             <select data-id="${t.id}">
               ${["EN_ATTENTE","EN_COURS","TERMINE","BLOQUE"].map(s =>
-                `<option value="${s}" ${t.statut === s ? "selected" : ""}>${s}</option>`
+                `<option value="${s}" ${t.statut === s ? "selected" : ""}>${STAT[s]}</option>`
               ).join("")}
             </select>
           </div>
@@ -97,10 +160,14 @@
 
         const sel = row.querySelector("select");
         sel.addEventListener("change", async (e) => {
-          const id  = e.target.getAttribute("data-id");
+          const id = e.target.getAttribute("data-id");
           const val = e.target.value;
 
-          const { error } = await sb.from("tasks").update({ statut: val }).eq("id", id);
+          const { error } = await sb
+            .from("tasks")
+            .update({ statut: val })
+            .eq("id", id);
+
           if (error) msgEl.textContent = "Erreur update: " + error.message;
           else refresh();
         });
@@ -110,20 +177,28 @@
     }
 
     document.getElementById("add").addEventListener("click", async () => {
-      const nom    = document.getElementById("nom").value.trim();
-      const zone   = document.getElementById("zone").value.trim();
+      const nom = document.getElementById("nom").value.trim();
+      const categorie = document.getElementById("categorie").value;
+      const zone = document.getElementById("zone").value.trim();
       const statut = document.getElementById("statut").value;
 
       if (!nom) { alert("Nom obligatoire"); return; }
+      if (!zone) { alert("Zone obligatoire"); return; }
 
-      const { error } = await sb.from("tasks").insert([{ nom, zone, statut }]);
-      if (error) msgEl.textContent = "Erreur insert: " + error.message;
-      else {
+      const { error } = await sb
+        .from("tasks")
+        .insert([{ nom, categorie, zone, statut }]);
+
+      if (error) {
+        msgEl.textContent = "Erreur insert: " + error.message;
+      } else {
         document.getElementById("nom").value = "";
         document.getElementById("zone").value = "";
         refresh();
       }
     });
+
+    document.getElementById("refreshBtn").addEventListener("click", refresh);
 
     refresh();
   </script>
